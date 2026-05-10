@@ -73,13 +73,15 @@ let i2c = embassy_rp::i2c::I2c::new_async(
 
 ```rust
 let pca = PCA.init(Pca9548a::new(i2c, BASE_ADDRESS));
-let subBus = pca.single_subbus(0 /* 0-7 index of the pca9548 interface we target */)
+let subBus_0 = pca.single_subbus(0 /* 0-7 index of the pca9548 interface we target */)
+let subBus_1 = pca.single_subbus(1 /* 0-7 index of the pca9548 interface we target */)
 ```
 
 We now can pass the `subBus` instance to the driver of the hardware we intent to use like we would do with the `i2c` instance:
 
 ```rust
-let interface = I2CDisplayInterface::new(subBus); // ssd1306 oled display in this case
+let interface_0 = I2CDisplayInterface::new(subBus_0); // ssd1306 oled display 1
+let interface_1 = I2CDisplayInterface::new(subBus_1); // ssd1306 oled display 2
 [...]
 ```
 
