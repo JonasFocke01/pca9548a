@@ -35,6 +35,55 @@ let pca_1_7 = Pca9548a::<std::sync::Mutex<_>>::new(pca_1.single_subbus(7), BASE_
 pca_1_7.select_single(3).unwrap().write(0x42, &[1, 2]).unwrap();
 ```
 
+## `no_std` Example
+
+The necessary trait implementation for embassy are provided in the featureflag "embassy"
+
+We first define the type for the PCA:
+
+```rust
+static PCA: StaticCell<Pca9548a<Mutex<CriticalSectionRawMutex, I2c<'static, I2C1, Async>>>> =
+    StaticCell::new();
+```
+
+We also need to create the async i2c instance...
+
+```rust
+bind_interrupts!(struct Irqs {
+    I2C1_IRQ => embassy_rp::i2c::InterruptHandler<embassy_rp::peripherals::I2C1>;
+});
+
+[...]
+
+let sda = peripherals.PIN_26;
+let scl = peripherals.PIN_27;
+
+let i2c_config = embassy_rp::i2c::Config::default();
+
+let i2c = embassy_rp::i2c::I2c::new_async(
+    peripherals.I2C1,
+    scl,
+    sda,
+    Irqs,
+    i2c_config,
+);
+```
+
+...and pass it to the PCA
+
+```rust
+let pca = PCA.init(Pca9548a::new(i2c, BASE_ADDRESS));
+let subBus = pca.single_subbus(0 /* 0-7 index of the pca9548 interface we target */)
+```
+
+We now can pass the `subBus` instance to the driver of the hardware we intent to use like we would do with the `i2c` instance:
+
+```rust
+let interface = I2CDisplayInterface::new(subBus); // ssd1306 oled display in this case
+[...]
+```
+
+
 ## Note on SharedBus
 This driver requires shared access to the underlying i2c bus similar to the `shared_bus` crate.
 A mutex is used to implement this.
